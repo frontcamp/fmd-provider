@@ -63,7 +63,7 @@ Development workflow
 Documenting rules
 -----------------
 
-When reviewing the documentation, keep in mind that an empty script or batch/command file may be an intentional step in incremental development. A developer may create directories first, then empty files, and add the implementation later. Do not report such files as errors; briefly mention them as a reminder that implementation is pending.
+When reviewing the documentation, keep in mind that scripts and batch/command files may be intentionally empty, and planned files may not yet exist. A developer may create directories first, add files later, and implement them in a subsequent stage. Do not report these as errors; briefly note which files still need to be created or implemented.
 
 
 Development rules

@@ -17,12 +17,12 @@ Financial Market Data Provider (FMD Provider)
 
 FMD Provider предназначен для сбора рыночных данных из разрозненных источников, их нормализации и передачи другим подсистемам программного комплекса FMD Trader.
 
-Информация по сбору исходных данных: `docs/market-data-collection.md`
-Информация по нормализации данных: `docs/market-data-normalization.md`
+Требования и решения по сбору исходных рыночных данных: `docs/market-data-collection.md`
+Техзадание на нормализацию исходных рыночных данных: `docs/market-data-normalization.md`
 
 Общая схема работы FMD Provider:
 1. Исходные рыночные данные накапливаются в `data/sources/`.
-2. `normalize.cmd` нормализует, фильтрует и переносит данные из `data/sources/` в симметричные каталоги `data/normalized/`.
+2. `data/sources/normalize.cmd` нормализует, фильтрует и переносит данные из `data/sources/*` в симметричные каталоги `data/normalized/*`.
 3. `fmd-provider.py` предоставляет запрошенные данные в требуемом формате.
 
 
