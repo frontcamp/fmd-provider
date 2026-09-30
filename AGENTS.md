@@ -59,6 +59,13 @@ Development workflow
     + Python (.py) - relative project filepath and a few lines describing its purpose;
     + configuration (.ini, .cfg) - a few commented lines describing target and purpose.
 
+
+Documenting rules
+-----------------
+
+When reviewing the documentation, keep in mind that an empty script or batch/command file may be an intentional step in incremental development. A developer may create directories first, then empty files, and add the implementation later. Do not report such files as errors; briefly mention them as a reminder that implementation is pending.
+
+
 Development rules
 -----------------
 
