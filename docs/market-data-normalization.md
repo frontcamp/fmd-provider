@@ -16,12 +16,12 @@
 Как это должно работать
 -----------------------
 
-Выбранные источники и ссылки для скачивания данных: `data\sources\download.txt`.
-График обновления приведенных источников: `data\sources\availability.txt`.
+Выбранные источники и ссылки для скачивания данных: `data/sources/download.txt`.
+График обновления приведенных источников: `data/sources/availability.txt`.
 
 Каждый день обновленные данные скачиваются из указанных источников в соответствующие каталоги. Каждый файл данных содержит торговую сессию за один день, часовой пояс зависит от биржи.
 
-На момент составления этого документа структура каталогов с источниками выглядит так:
+На момент составления этого документа (30.09.2026) структура каталогов с источниками выглядит так:
 
 /data
     /sources
@@ -32,8 +32,8 @@
             /DUSD - Börse Düsseldorf Quotrix (Freiverkehr)
             /HAMA - Börse Hamburg (Regulierter Markt)
             /HAMB - Börse Hamburg (Freiverkehr)
-            /HAMP - Börse Hamburg Electronic Trading 2 (Regulierter Markt)
-            /HAMQ - Börse Hamburg Electronic Trading 2 (Freiverkehr)
+            /HAMP - Börse Hamburg Electronic Trading (Regulierter Markt)
+            /HAMQ - Börse Hamburg Electronic Trading (Freiverkehr)
             /HANA - Börse Hannover (Regulierter Markt)
             /HANB - Börse Hannover (Freiverkehr)
         /Deutsche Börse Group
