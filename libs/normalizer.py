@@ -26,15 +26,27 @@ _APP_INTRO = f'''{_APP_NAME} {_APP_VERSION}
 {_APP_COPYRIGHT}'''
 
 
+def ensure_dir(dir_path):
+    '''Ensure that the path's directories are exists, create them otherwise.'''
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+
+
 class CustomNormalizer(ABC):
 
     def __init__(self):
         print(_APP_INTRO)
 
+        # initialize source & destination folders
         self._source_dir: str = self._get_script_dir()
         self._normalized_dir: str = self._get_normalized_dir(self._source_dir)
+        ensure_dir(self._normalized_dir)
 
-        print(f'{self._source_dir = }')
+        # initialize data buffers
+        self._buff_trans: dict = {}
+        self._buff_log: list = []
+
+        print(f'Source location: {self._source_dir}')
 
     #
     # Common methods
@@ -49,6 +61,10 @@ class CustomNormalizer(ABC):
              + 'normalized' \
              + source_dir[index + 8:]
 
+    def _reset_buffers(self):
+        self._buff_trans = {}
+        self._buff_log = []
+
     #
     # Abstract methods
 
@@ -57,21 +73,39 @@ class CustomNormalizer(ABC):
         pass
 
     @abstractmethod
-    def _process_line(self, line: str) -> dict | None:
+    def _get_yyyymmdd(self, filename) -> bool|str:
+        pass
+
+    @abstractmethod
+    def _process_line(self, line: str) -> bool:
         pass
 
     #
     # Process methods
 
     def _process_file(self, file_name: str) -> None:
-        file_path = os.path.join(self._source_dir, file_name)
 
+        # define source file path
+        file_path = os.path.join(self._source_dir, file_name)
         if not os.path.isfile(file_path):
             return
 
-        print(f'Process file: {file_path}')
+        # define source date
+        proc_date = self._get_yyyymmdd(file_name)
+
+        #define destination files
+        log_root = os.path.join(self._normalized_dir, proc_date + '.log')
+        archive_root = os.path.join(self._normalized_dir, proc_date + '.zip')
+
+        # TODO: check if resulting file already exists - then return from function
+
+        # show what's going on..
+        print('-' * 20)
+        print(f'File: {file_name}; date: {proc_date}')
 
         with ExitStack() as stack:
+
+            # read data
             if file_name.lower().endswith('.zip'):
                 archive = stack.enter_context(zipfile.ZipFile(file_path))
                 member = next(
@@ -90,24 +124,47 @@ class CustomNormalizer(ABC):
                     open(file_path, 'rt', encoding='utf-8')
                 )
 
-            count = 0
+            # parse data lines
+            self._reset_buffers()
             for line in text_file:
-                count += 1
-                if count <= 5:
-                    self._process_line(line)
+                if not self._process_line(line):
+                    self._buff_log.append(f'Undefined: {line.rstrip('\r\n')}')
+
+            # save log (if non empty)
+            if len(self._buff_log):
+                with open(log_root, 'w', encoding='utf-8', newline='') as file:
+                    file.write('\r\n'.join(self._buff_log))
+
+            # compile transactions
+            transactions = ''
+
+            # compile instruments
+            instruments = ''
+
+            # save transactions & instruments to zip archive
+            with zipfile.ZipFile(
+                archive_root,
+                mode='w',
+                compression=zipfile.ZIP_DEFLATED,
+                compresslevel=9,
+            ) as archive:
+                archive.writestr('transactions.csv', transactions)
+                archive.writestr('instruments.csv', instruments)
+
+            # remove source files if all successfully done
+
+            # show results
+            report = f'Transactions: {len(self._buff_trans)}; ' \
+                   + f'instruments: {instruments.strip().count('\n')}; ' \
+                   + f'undefined: {len(self._buff_log)}'
+            print(report)
 
     def process(self) -> None:
         file_names = os.listdir(self._source_dir)
 
-        file_names.sort()
+        file_names = list(filter(self._get_yyyymmdd, file_names))
+        file_names.sort(key=self._get_yyyymmdd)
 
         for file_name in file_names:
-            if file_name in ('normalize.py', '.', '..'):
-                continue
-
-            file_path = os.path.join(self._source_dir, file_name)
-            if not os.path.isfile(file_path):
-                continue
-
             self._process_file(file_name)
 
