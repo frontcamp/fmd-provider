@@ -43,7 +43,7 @@ class CustomNormalizer(ABC):
         ensure_dir(self._normalized_dir)
 
         # initialize data buffers
-        self._buff_trans: dict = {}
+        self._buff_trans: list = []
         self._buff_log: list = []
 
         print(f'Source location: {self._source_dir}')
@@ -62,7 +62,7 @@ class CustomNormalizer(ABC):
              + source_dir[index + 8:]
 
     def _reset_buffers(self):
-        self._buff_trans = {}
+        self._buff_trans = []
         self._buff_log = []
 
     #
@@ -92,6 +92,8 @@ class CustomNormalizer(ABC):
 
         # define source date
         proc_date = self._get_yyyymmdd(file_name)
+        if not isinstance(proc_date, str):  # check type
+            return
 
         #define destination files
         log_root = os.path.join(self._normalized_dir, proc_date + '.log')
@@ -132,6 +134,7 @@ class CustomNormalizer(ABC):
 
             # save log (if non empty)
             if len(self._buff_log):
+                # TODO: delete old log if it exists before write new
                 with open(log_root, 'w', encoding='utf-8', newline='') as file:
                     file.write('\r\n'.join(self._buff_log))
 
@@ -151,7 +154,7 @@ class CustomNormalizer(ABC):
                 archive.writestr('transactions.csv', transactions)
                 archive.writestr('instruments.csv', instruments)
 
-            # remove source files if all successfully done
+            # TODO: remove source file if all successfully done
 
             # show results
             report = f'Transactions: {len(self._buff_trans)}; ' \
