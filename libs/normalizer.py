@@ -1,5 +1,6 @@
 '''Utilities for normalizing exchange trade records.'''
 
+import csv
 import gzip
 import io
 import os
@@ -132,17 +133,69 @@ class CustomNormalizer(ABC):
                 if not self._process_line(line):
                     self._buff_log.append(f'Undefined: {line.rstrip('\r\n')}')
 
+            # delete old log in any case
+            if os.path.isfile(log_root):
+                os.remove(log_root)
+
             # save log (if non empty)
             if len(self._buff_log):
-                # TODO: delete old log if it exists before write new
                 with open(log_root, 'w', encoding='utf-8', newline='') as file:
                     file.write('\r\n'.join(self._buff_log))
 
-            # compile transactions
-            transactions = ''
+            # sort transactions by datetime
+            self._buff_trans.sort(
+                key=lambda transaction: (
+                    transaction['trade_time'][:19],
+                    transaction['trade_time'][20:].rstrip('Z').ljust(9, '0'),
+                )
+            )
+
+            # remove transactions out of processing date
+            self._buff_trans = [
+                transaction for transaction in self._buff_trans
+                if transaction['trade_time'][:10].replace('-', '') == proc_date
+            ]
+
+            # compile transactions CSV
+            temp_trans_file = io.StringIO(newline='')
+            writer = csv.DictWriter(
+                temp_trans_file,
+                fieldnames=(
+                    'source', 'mic', 'isin', 'title', 'trade_time',
+                    'price', 'currency', 'quantity', 'quantity_unit',
+                ),
+                delimiter=';',
+            )
+            writer.writeheader()
+            writer.writerows(self._buff_trans)
+            transactions = temp_trans_file.getvalue()
 
             # compile instruments
-            instruments = ''
+            _buff_instr = []
+            seen_isins = set()
+
+            for transaction in self._buff_trans:
+                isin = transaction['isin']
+                if isin not in seen_isins:
+                    seen_isins.add(isin)
+                    _buff_instr.append({
+                        'isin': isin,
+                        'title': transaction['title'],
+                    })
+
+            _buff_instr.sort(key=lambda record: record['isin'])
+
+            temp_instr_file = io.StringIO(newline='')
+            writer = csv.DictWriter(
+                temp_instr_file,
+                fieldnames=(
+                    'isin', 'title',
+                ),
+                delimiter=';',
+            )
+            writer.writeheader()
+            writer.writerows(_buff_instr)
+            instruments = temp_instr_file.getvalue()
 
             # save transactions & instruments to zip archive
             with zipfile.ZipFile(
@@ -158,7 +211,7 @@ class CustomNormalizer(ABC):
 
             # show results
             report = f'Transactions: {len(self._buff_trans)}; ' \
-                   + f'instruments: {instruments.strip().count('\n')}; ' \
+                   + f'instruments: {len(_buff_instr)}; ' \
                    + f'undefined: {len(self._buff_log)}'
             print(report)
 
