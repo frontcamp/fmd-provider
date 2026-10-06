@@ -1,5 +1,10 @@
 '''Utilities for normalizing exchange trade records.'''
 
+# File/folder role prefixes:
+#   arc_* - archive
+#   log_* - log
+#   src_* - source
+
 import csv
 import gzip
 import io
@@ -27,10 +32,10 @@ _APP_INTRO = f'''{_APP_NAME} {_APP_VERSION}
 {_APP_COPYRIGHT}'''
 
 
-def ensure_dir(dir_path):
+def ensure_dir(dir_abspath):
     '''Ensure that the path's directories are exists, create them otherwise.'''
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path)
+    if not os.path.exists(dir_abspath):
+        os.makedirs(dir_abspath)
 
 
 class CustomNormalizer(ABC):
@@ -39,42 +44,150 @@ class CustomNormalizer(ABC):
         print(_APP_INTRO)
 
         # initialize source & destination folders
-        self._source_dir: str = self._get_script_dir()
-        self._normalized_dir: str = self._get_normalized_dir(self._source_dir)
-        ensure_dir(self._normalized_dir)
+        self._src_dir_abspath: str = self._get_script_dir_abspath()
+        self._normalized_dir_abspath: str = self._get_normalized_dir_abspath(self._src_dir_abspath)
+        ensure_dir(self._normalized_dir_abspath)
 
         # initialize data buffers
         self._buff_trans: list = []
         self._buff_log: list = []
 
-        print(f'Source location: {self._source_dir}')
+        print(f'Source location: {self._src_dir_abspath}')
 
     #
     # Common methods
 
-    def _get_normalized_dir(self, source_dir: str) -> str:
-        search_path = source_dir.replace('\\', '/')
-        index = search_path.find('/sources/')
+    def _get_normalized_dir_abspath(self, src_dir_abspath: str) -> str:
+        search_dir_abspath = src_dir_abspath.replace('\\', '/')
+        index = search_dir_abspath.find('/sources/')
         if index == -1:
             raise ValueError('Source path does not contain a sources directory')
 
-        return source_dir[:index + 1] \
+        return src_dir_abspath[:index + 1] \
              + 'normalized' \
-             + source_dir[index + 8:]
+             + src_dir_abspath[index + 8:]
 
     def _reset_buffers(self):
         self._buff_trans = []
         self._buff_log = []
 
+    def _parse_source(self, src_file_name, src_file_abspath):
+        with ExitStack() as stack:
+
+            # read data
+            if src_file_name.lower().endswith('.zip'):
+                src_arc_file_obj = stack.enter_context(zipfile.ZipFile(src_file_abspath))
+                member = next(
+                    member for member in src_arc_file_obj.infolist()
+                    if not member.is_dir()
+                )
+                src_file_obj = stack.enter_context(
+                    io.TextIOWrapper(src_arc_file_obj.open(member), encoding='utf-8')
+                )
+            elif src_file_name.lower().endswith('.gz'):
+                src_file_obj = stack.enter_context(
+                    gzip.open(src_file_abspath, 'rt', encoding='utf-8')
+                )
+            else:
+                src_file_obj = stack.enter_context(
+                    open(src_file_abspath, 'rt', encoding='utf-8')
+                )
+
+            # parse data lines
+            self._reset_buffers()
+            for line in src_file_obj:
+                if not self._process_line(line):
+                    self._buff_log.append(f'Undefined: {line.rstrip('\r\n')}')
+
+    def _buff_trans_sort_by_time(self):
+        '''Sort transactions by datetime'''
+        self._buff_trans.sort(
+            key=lambda transaction: (
+                transaction['trade_time'][:19],
+                transaction['trade_time'][20:].rstrip('Z').ljust(9, '0'),
+            )
+        )
+
+    def _buff_trans_filter_by_date(self, date):
+        '''Remove transactions out of processing date'''
+        self._buff_trans = [
+            transaction for transaction in self._buff_trans
+            if transaction['trade_time'][:10].replace('-', '') == date
+        ]
+
+    def _compile_transactions(self) -> str:
+        '''Compile transactions CSV'''
+        temp_trans_file_obj = io.StringIO(newline='')
+        writer = csv.DictWriter(
+            temp_trans_file_obj,
+            fieldnames=(
+                'source', 'mic', 'isin', 'title', 'trade_time',
+                'price', 'currency', 'quantity', 'quantity_unit',
+            ),
+            delimiter=';',
+        )
+        writer.writeheader()
+        writer.writerows(self._buff_trans)
+        return temp_trans_file_obj.getvalue()
+
+    def _collect_instruments(self):
+        instruments = []
+        seen_isins = set()
+
+        for transaction in self._buff_trans:
+            isin = transaction['isin']
+            if isin not in seen_isins:
+                seen_isins.add(isin)
+                instruments.append({
+                    'isin': isin,
+                    'title': transaction['title'],
+                })
+
+        instruments.sort(key=lambda record: record['isin'])
+        return instruments
+
+    def _compile_instruments(self, _buff_instr) -> str:
+        temp_instr_file_obj = io.StringIO(newline='')
+        writer = csv.DictWriter(
+            temp_instr_file_obj,
+            fieldnames=(
+                'isin', 'title',
+            ),
+            delimiter=';',
+        )
+        writer.writeheader()
+        writer.writerows(_buff_instr)
+        return temp_instr_file_obj.getvalue()
+
+    def _verify_zip(self, arc_file_abspath: str) -> bool:
+        try:
+            with zipfile.ZipFile(arc_file_abspath, 'r') as arc_file_obj:
+                if set(arc_file_obj.namelist()) != {
+                    'transactions.csv',
+                    'instruments.csv',
+                }:
+                    raise zipfile.BadZipFile(f'Error: Invalid structure: {arc_file_abspath}')
+
+                bad_file_name = arc_file_obj.testzip()
+                if bad_file_name is not None:
+                    raise zipfile.BadZipFile(f'Error: Corrupted file: {bad_file_name}')
+
+        except Exception as exc:
+            print(f'Error: The archive failed verification: {arc_file_abspath}: {exc}',
+                  file=sys.stderr)
+            os.remove(arc_file_abspath)
+            return False
+        return True
+
     #
     # Abstract methods
 
     @abstractmethod
-    def _get_script_dir(self) -> str:
+    def _get_script_dir_abspath(self) -> str:
         pass
 
     @abstractmethod
-    def _get_yyyymmdd(self, filename) -> bool|str:
+    def _get_yyyymmdd(self, src_file_name) -> bool|str:
         pass
 
     @abstractmethod
@@ -84,143 +197,83 @@ class CustomNormalizer(ABC):
     #
     # Process methods
 
-    def _process_file(self, file_name: str) -> None:
+    def _process_file(self, src_file_name: str) -> None:
 
         # define source file path
-        file_path = os.path.join(self._source_dir, file_name)
-        if not os.path.isfile(file_path):
+        src_file_abspath = os.path.join(self._src_dir_abspath, src_file_name)
+        if not os.path.isfile(src_file_abspath):
             return
 
         # define source date
-        proc_date = self._get_yyyymmdd(file_name)
+        proc_date = self._get_yyyymmdd(src_file_name)
         if not isinstance(proc_date, str):  # check type
             return
 
         #define destination files
-        log_root = os.path.join(self._normalized_dir, proc_date + '.log')
-        archive_root = os.path.join(self._normalized_dir, proc_date + '.zip')
-
-        # TODO: check if resulting file already exists - then return from function
+        log_file_abspath = os.path.join(self._normalized_dir_abspath, proc_date + '.log')
+        arc_file_abspath = os.path.join(self._normalized_dir_abspath, proc_date + '.zip')
 
         # show what's going on..
         print('-' * 20)
-        print(f'File: {file_name}; date: {proc_date}')
+        print(f'File: {src_file_name}; date: {proc_date}')
 
-        with ExitStack() as stack:
+        # if archive already exists..
+        if os.path.isfile(arc_file_abspath):
+            print(f'Already exists: {arc_file_abspath}')
+            if self._verify_zip(arc_file_abspath) and not os.path.isfile(log_file_abspath):
+                #os.remove(src_file_abspath)  # DELETING SOURCE!
+                #print(f'Deleted: {src_file_name}')
+                return
 
-            # read data
-            if file_name.lower().endswith('.zip'):
-                archive = stack.enter_context(zipfile.ZipFile(file_path))
-                member = next(
-                    member for member in archive.infolist()
-                    if not member.is_dir()
-                )
-                text_file = stack.enter_context(
-                    io.TextIOWrapper(archive.open(member), encoding='utf-8')
-                )
-            elif file_name.lower().endswith('.gz'):
-                text_file = stack.enter_context(
-                    gzip.open(file_path, 'rt', encoding='utf-8')
-                )
-            else:
-                text_file = stack.enter_context(
-                    open(file_path, 'rt', encoding='utf-8')
-                )
+        self._parse_source(src_file_name, src_file_abspath)
 
-            # parse data lines
-            self._reset_buffers()
-            for line in text_file:
-                if not self._process_line(line):
-                    self._buff_log.append(f'Undefined: {line.rstrip('\r\n')}')
+        # delete old log in any case
+        if os.path.isfile(log_file_abspath):
+            os.remove(log_file_abspath)
 
-            # delete old log in any case
-            if os.path.isfile(log_root):
-                os.remove(log_root)
+        # save log (if non empty)
+        if len(self._buff_log):
+            with open(log_file_abspath, 'w', encoding='utf-8', newline='') as log_file_obj:
+                log_file_obj.write('\r\n'.join(self._buff_log))
 
-            # save log (if non empty)
-            if len(self._buff_log):
-                with open(log_root, 'w', encoding='utf-8', newline='') as file:
-                    file.write('\r\n'.join(self._buff_log))
+        self._buff_trans_sort_by_time()
+        self._buff_trans_filter_by_date(proc_date)
+        transactions = self._compile_transactions()
 
-            # sort transactions by datetime
-            self._buff_trans.sort(
-                key=lambda transaction: (
-                    transaction['trade_time'][:19],
-                    transaction['trade_time'][20:].rstrip('Z').ljust(9, '0'),
-                )
-            )
+        _buff_instr = self._collect_instruments()
+        instruments = self._compile_instruments(_buff_instr)
 
-            # remove transactions out of processing date
-            self._buff_trans = [
-                transaction for transaction in self._buff_trans
-                if transaction['trade_time'][:10].replace('-', '') == proc_date
-            ]
+        # save transactions & instruments to zip archive
+        with zipfile.ZipFile(
+            arc_file_abspath,
+            mode='w',
+            compression=zipfile.ZIP_DEFLATED,
+            compresslevel=9,
+        ) as arc_file_obj:
+            arc_file_obj.writestr('transactions.csv', transactions)
+            arc_file_obj.writestr('instruments.csv', instruments)
 
-            # compile transactions CSV
-            temp_trans_file = io.StringIO(newline='')
-            writer = csv.DictWriter(
-                temp_trans_file,
-                fieldnames=(
-                    'source', 'mic', 'isin', 'title', 'trade_time',
-                    'price', 'currency', 'quantity', 'quantity_unit',
-                ),
-                delimiter=';',
-            )
-            writer.writeheader()
-            writer.writerows(self._buff_trans)
-            transactions = temp_trans_file.getvalue()
+        # check if archive exists and valid, delete otherwise
+        self._verify_zip(arc_file_abspath)
 
-            # compile instruments
-            _buff_instr = []
-            seen_isins = set()
+        # show results
+        report = f'Transactions: {len(self._buff_trans)}; ' \
+                + f'instruments: {len(_buff_instr)}; ' \
+                + f'undefined: {len(self._buff_log)}'
+        print(report)
 
-            for transaction in self._buff_trans:
-                isin = transaction['isin']
-                if isin not in seen_isins:
-                    seen_isins.add(isin)
-                    _buff_instr.append({
-                        'isin': isin,
-                        'title': transaction['title'],
-                    })
-
-            _buff_instr.sort(key=lambda record: record['isin'])
-
-            temp_instr_file = io.StringIO(newline='')
-            writer = csv.DictWriter(
-                temp_instr_file,
-                fieldnames=(
-                    'isin', 'title',
-                ),
-                delimiter=';',
-            )
-            writer.writeheader()
-            writer.writerows(_buff_instr)
-            instruments = temp_instr_file.getvalue()
-
-            # save transactions & instruments to zip archive
-            with zipfile.ZipFile(
-                archive_root,
-                mode='w',
-                compression=zipfile.ZIP_DEFLATED,
-                compresslevel=9,
-            ) as archive:
-                archive.writestr('transactions.csv', transactions)
-                archive.writestr('instruments.csv', instruments)
-
-            # TODO: remove source file if all successfully done
-
-            # show results
-            report = f'Transactions: {len(self._buff_trans)}; ' \
-                   + f'instruments: {len(_buff_instr)}; ' \
-                   + f'undefined: {len(self._buff_log)}'
-            print(report)
+        # if archive successfully created and log is empty..
+        if os.path.isfile(arc_file_abspath) and not self._buff_log:
+            #os.remove(src_file_abspath)  # DELETING SOURCE!
+            #print(f'Deleted: {src_file_name}')
+            pass
 
     def process(self) -> None:
-        file_names = os.listdir(self._source_dir)
+        src_file_names = os.listdir(self._src_dir_abspath)
 
-        file_names = list(filter(self._get_yyyymmdd, file_names))
-        file_names.sort(key=self._get_yyyymmdd)
+        src_file_names = list(filter(self._get_yyyymmdd, src_file_names))
+        src_file_names.sort(key=self._get_yyyymmdd)
 
-        for file_name in file_names:
-            self._process_file(file_name)
+        for src_file_name in src_file_names:
+            self._process_file(src_file_name)
 

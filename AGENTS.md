@@ -140,10 +140,13 @@ Naming conventions
 - Use snake_case for functions and methods, e.g. `find_optimal_route()`.
 - Use PascalCase for classes and types, e.g. `SignalBuffer`, `RichLogger`.
 - Prefix internal/non-public functions, methods, attributes, and module-level variables with `_`.
-- *_file - file handler
-- *_name - file or folder name
-- *_path - relative path to file or folder
-- *_root - absolute path to file or folder
+- *_file_obj - file object
+- *_file_name - file name
+- *_file_relpath - relative path to file
+- *_file_abspath - absolute path to file
+- *_dir_name - folder name
+- *_dir_relpath - relative path to folder
+- *_dir_abspath - absolute path to folder
 - *_nls - no leading slash
 
 

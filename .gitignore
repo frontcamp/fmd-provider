@@ -1,5 +1,10 @@
 # project
-/data/sources/
+/data/normalized/
+/data/sources/*
+!/data/sources/*.cmd
+!/data/sources/*.md
+!/data/sources/*.py
+!/data/sources/*.txt
 
 # common
 tree.txt

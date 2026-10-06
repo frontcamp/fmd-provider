@@ -1,0 +1,55 @@
+
+Площадки и ссылки на скачивание
+===============================
+
+BÖAG Börsen AG:
+    Index & Download: https://cld42.boersenag.de/m13data/
+        DUSA - Börse Düsseldorf (Regulierter Markt)
+        DUSB - Börse Düsseldorf (Freiverkehr)
+            Time: 08:00 - 22:00
+        DUSC - Börse Düsseldorf Quotrix (Regulierter Markt)
+        DUSD - Börse Düsseldorf Quotrix (Freiverkehr)
+            Time: 07:30 - 23:00
+        HAMA - Börse Hamburg (Regulierter Markt)
+        HAMB - Börse Hamburg (Freiverkehr)
+            Time: 08:00 - 22:00
+        HAMP - Börse Hamburg Electronic Trading (Regulierter Markt)
+        HAMQ - Börse Hamburg Electronic Trading (Freiverkehr)
+            Time: (empty data)
+        HANA - Börse Hannover (Regulierter Markt)
+        HANB - Börse Hannover (Freiverkehr)
+            Time: 08:00 - 22:00
+
+Deutsche Börse Group:
+    Index: https://www.mds.deutsche-boerse.com/mds-en/real-time-data/Delayed-data
+    Download:
+        DETR - Xetra
+            Time: 08:00 - 22:00
+            Link: https://mfs.deutsche-boerse.com/DETR-posttrade
+        DEUR - Eurex
+            Time: 08:00 - 22:00
+            Link: https://mfs.deutsche-boerse.com/DEUR-posttrade
+        DFRA - Börse Frankfurt
+            Time: 08:00 - 22:00
+            Link: https://mfs.deutsche-boerse.com/DFRA-posttrade
+        DGAT - Tradegate BSX
+            Time: 07:30 - 22:00
+            Link: https://mfs.deutsche-boerse.com/DGAT-posttrade
+        EEX: (не качаем - не интересно)
+
+HAMN - Börse Hamburg LS-X (Freiverkehr) (trading platform of Börse Hamburg):
+    Trading hours: 07:30 - 23:00
+    Download: https://www.ls-x.de/de/download (внизу 2 ссылки: Vorheriger Handelstag (DD.MM.YYYY), RTS 1 & 2)
+
+XEQT - Equiduct (trading platform of Börse Berlin AG):
+    Trading hours: 09:00 - 17:40
+    Download: https://www.equiduct.com/document-library/ (Delayed Trade Data > Previous Day Trade Data)
+
+360T EU MTF (Frankfurt): (не качаем - не интересно)
+
+Не получилось скачать:
+    - gettex: https://www.gettex.de/handel/delayed-data/posttrade-data/ (нет daily файла)
+    - Börse München: https://www.boerse-muenchen.de/handel-support/kursdaten-delayed-data/ (нет daily файла)
+    - Börse Stuttgart: https://www.boerse-stuttgart.de/de-de/fuer-geschaeftspartner/reports/mifir-ii-delayed-data/ (нет daily файла)
+    - European Investor Exchange, Hannover: https://european-investor-exchange.com/de/posttrade (нет daily файла)
+
