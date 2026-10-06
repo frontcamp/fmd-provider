@@ -34,6 +34,7 @@ _APP_INTRO = f'''{_APP_NAME} {_APP_VERSION}
 
 def ensure_dir(dir_abspath):
     '''Ensure that the path's directories are exists, create them otherwise.'''
+
     if not os.path.exists(dir_abspath):
         os.makedirs(dir_abspath)
 
@@ -67,6 +68,44 @@ class CustomNormalizer(ABC):
              + 'normalized' \
              + src_dir_abspath[index + 8:]
 
+    #
+    # Abstract methods
+
+    @abstractmethod
+    def _get_script_dir_abspath(self) -> str:
+        pass
+
+    @abstractmethod
+    def _get_yyyymmdd(self, src_file_name) -> bool|str:
+        pass
+
+    @abstractmethod
+    def _process_line(self, line: str) -> bool:
+        pass
+
+    #
+    # Process methods
+
+    def _verify_zip(self, arc_file_abspath: str) -> bool:
+        try:
+            with zipfile.ZipFile(arc_file_abspath, 'r') as arc_file_obj:
+                if set(arc_file_obj.namelist()) != {
+                    'transactions.csv',
+                    'instruments.csv',
+                }:
+                    raise zipfile.BadZipFile(f'Error: Invalid structure: {arc_file_abspath}')
+
+                bad_file_name = arc_file_obj.testzip()
+                if bad_file_name is not None:
+                    raise zipfile.BadZipFile(f'Error: Corrupted file: {bad_file_name}')
+
+        except Exception as exc:
+            print(f'Error: The archive failed verification: {arc_file_abspath}: {exc}',
+                  file=sys.stderr)
+            os.remove(arc_file_abspath)
+            return False
+        return True
+
     def _reset_buffers(self):
         self._buff_trans = []
         self._buff_log = []
@@ -99,8 +138,20 @@ class CustomNormalizer(ABC):
                 if not self._process_line(line):
                     self._buff_log.append(f'Undefined: {line.rstrip('\r\n')}')
 
+    def _unload_log(self, log_file_abspath):
+
+        # delete old log in any case
+        if os.path.isfile(log_file_abspath):
+            os.remove(log_file_abspath)
+
+        # save log (if non empty)
+        if len(self._buff_log):
+            with open(log_file_abspath, 'w', encoding='utf-8', newline='') as log_file_obj:
+                log_file_obj.write('\r\n'.join(self._buff_log))
+
     def _buff_trans_sort_by_time(self):
         '''Sort transactions by datetime'''
+
         self._buff_trans.sort(
             key=lambda transaction: (
                 transaction['trade_time'][:19],
@@ -110,6 +161,7 @@ class CustomNormalizer(ABC):
 
     def _buff_trans_filter_by_date(self, date):
         '''Remove transactions out of processing date'''
+
         self._buff_trans = [
             transaction for transaction in self._buff_trans
             if transaction['trade_time'][:10].replace('-', '') == date
@@ -117,6 +169,7 @@ class CustomNormalizer(ABC):
 
     def _compile_transactions(self) -> str:
         '''Compile transactions CSV'''
+
         temp_trans_file_obj = io.StringIO(newline='')
         writer = csv.DictWriter(
             temp_trans_file_obj,
@@ -159,43 +212,17 @@ class CustomNormalizer(ABC):
         writer.writerows(_buff_instr)
         return temp_instr_file_obj.getvalue()
 
-    def _verify_zip(self, arc_file_abspath: str) -> bool:
-        try:
-            with zipfile.ZipFile(arc_file_abspath, 'r') as arc_file_obj:
-                if set(arc_file_obj.namelist()) != {
-                    'transactions.csv',
-                    'instruments.csv',
-                }:
-                    raise zipfile.BadZipFile(f'Error: Invalid structure: {arc_file_abspath}')
+    def _save_archive(self, arc_file_abspath, transactions, instruments):
+        '''Save transactions & instruments to zip archive'''
 
-                bad_file_name = arc_file_obj.testzip()
-                if bad_file_name is not None:
-                    raise zipfile.BadZipFile(f'Error: Corrupted file: {bad_file_name}')
-
-        except Exception as exc:
-            print(f'Error: The archive failed verification: {arc_file_abspath}: {exc}',
-                  file=sys.stderr)
-            os.remove(arc_file_abspath)
-            return False
-        return True
-
-    #
-    # Abstract methods
-
-    @abstractmethod
-    def _get_script_dir_abspath(self) -> str:
-        pass
-
-    @abstractmethod
-    def _get_yyyymmdd(self, src_file_name) -> bool|str:
-        pass
-
-    @abstractmethod
-    def _process_line(self, line: str) -> bool:
-        pass
-
-    #
-    # Process methods
+        with zipfile.ZipFile(
+            arc_file_abspath,
+            mode='w',
+            compression=zipfile.ZIP_DEFLATED,
+            compresslevel=9,
+        ) as arc_file_obj:
+            arc_file_obj.writestr('transactions.csv', transactions)
+            arc_file_obj.writestr('instruments.csv', instruments)
 
     def _process_file(self, src_file_name: str) -> None:
 
@@ -226,15 +253,7 @@ class CustomNormalizer(ABC):
                 return
 
         self._parse_source(src_file_name, src_file_abspath)
-
-        # delete old log in any case
-        if os.path.isfile(log_file_abspath):
-            os.remove(log_file_abspath)
-
-        # save log (if non empty)
-        if len(self._buff_log):
-            with open(log_file_abspath, 'w', encoding='utf-8', newline='') as log_file_obj:
-                log_file_obj.write('\r\n'.join(self._buff_log))
+        self._unload_log(log_file_abspath)
 
         self._buff_trans_sort_by_time()
         self._buff_trans_filter_by_date(proc_date)
@@ -243,15 +262,7 @@ class CustomNormalizer(ABC):
         _buff_instr = self._collect_instruments()
         instruments = self._compile_instruments(_buff_instr)
 
-        # save transactions & instruments to zip archive
-        with zipfile.ZipFile(
-            arc_file_abspath,
-            mode='w',
-            compression=zipfile.ZIP_DEFLATED,
-            compresslevel=9,
-        ) as arc_file_obj:
-            arc_file_obj.writestr('transactions.csv', transactions)
-            arc_file_obj.writestr('instruments.csv', instruments)
+        self._save_archive(arc_file_abspath, transactions, instruments)
 
         # check if archive exists and valid, delete otherwise
         self._verify_zip(arc_file_abspath)
