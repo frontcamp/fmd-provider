@@ -1,4 +1,6 @@
 
+Last downloaded: tzdata-2026.5-py2.py3-none-any.zip
+
 Source:
 https://pypi.org/project/tzdata/#files
 
