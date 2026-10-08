@@ -8,6 +8,7 @@
 import csv
 import gzip
 import io
+import math
 import os
 import sys
 import zipfile
@@ -37,6 +38,16 @@ def ensure_dir(dir_abspath):
 
     if not os.path.exists(dir_abspath):
         os.makedirs(dir_abspath)
+
+def str_to_float(value: str) -> float | None:
+    '''Convert string to valid float'''
+    try:
+        result = float(value.replace(',', '.'))
+    except ValueError:
+        return None
+    if not math.isfinite(result) or result <= 0:
+        return None
+    return result
 
 
 class CustomNormalizer(ABC):
