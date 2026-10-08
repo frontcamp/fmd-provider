@@ -57,8 +57,8 @@ def parse_price(value: str) -> float | None:
 
     return result
 
-def parse_time_DUSA(value: str) -> str | None:
-    '''Convert DUSA local time (Europe/Berlin) to RFC 3339 UTC.'''
+def parse_time_DUSX(value: str) -> str | None:
+    '''Convert DUS* local time (Europe/Berlin) to RFC 3339 UTC.'''
     try:
         local_time = datetime.strptime(
             value, '%d.%m.%Y %H:%M:%S'

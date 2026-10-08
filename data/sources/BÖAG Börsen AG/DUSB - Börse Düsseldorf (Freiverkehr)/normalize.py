@@ -23,7 +23,7 @@ class Normalizer(CustomNormalizer):
     def _get_yyyymmdd(self, src_file_name: str) -> bool|str:
 
         # Filename example:
-        # Mifir13DelayedData_DUSA_0000001B_202610010000000000.csv
+        # Mifir13DelayedData_DUSB_0000001B_202610010000000000.csv
 
         if not src_file_name.endswith('.csv'):
             return False
@@ -41,7 +41,7 @@ class Normalizer(CustomNormalizer):
 
         # Data example:
         # MIC; ISIN; displayName; time; price; size; supplement
-        # DUSA;DE000BASF111;"BASF SE Namens-Aktien o.N.";01.10.2026 08:00:11;50,04;50;"bez "
+        # DUSB;DE000CBK1001;"Commerzbank AG Inhaber-Aktien o.N.";01.10.2026 08:00:02;39,85;75;"bez "
 
         # parse data
 
@@ -77,7 +77,7 @@ class Normalizer(CustomNormalizer):
         # convert to unified record
         title = source_record['displayName'] or source_record['ISIN']
         transaction = {
-            'source': 'DUSA',                   # data source ID
+            'source': 'DUSB',                   # data source ID
             'mic': source_record['MIC'],        # trade execution venue
             'isin': source_record['ISIN'],      # instrument ID
             'title': title,                     # instrument name
