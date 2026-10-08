@@ -1,10 +1,11 @@
 # project
 /data/normalized/
-/data/sources/*
-!/data/sources/*.cmd
-!/data/sources/*.md
-!/data/sources/*.py
-!/data/sources/*.txt
+/data/sources/**
+!/data/sources/**/
+!/data/sources/**/*.cmd
+!/data/sources/**/*.md
+!/data/sources/**/*.py
+!/data/sources/**/*.txt
 
 # common
 tree.txt

@@ -14,6 +14,11 @@ import sys
 import zipfile
 from abc import ABC, abstractmethod
 from contextlib import ExitStack
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo, reset_tzpath
+
+_MODULE_DIR_ABSPATH = os.path.dirname(os.path.abspath(__file__))
+reset_tzpath([os.path.join(_MODULE_DIR_ABSPATH, 'tzdata', 'zoneinfo')])
 
 DEBUG = True  # force fresh normalization & prevent deleting sources
 
@@ -49,8 +54,20 @@ def parse_price(value: str) -> float | None:
         return None
     if not math.isfinite(result) or result <= 0:
         return None
+
     return result
 
+def parse_time_DUSA(value: str) -> str | None:
+    '''Convert DUSA local time (Europe/Berlin) to RFC 3339 UTC.'''
+    try:
+        local_time = datetime.strptime(
+            value, '%d.%m.%Y %H:%M:%S'
+        ).replace(tzinfo=ZoneInfo('Europe/Berlin'))
+        time_utc = local_time.astimezone(timezone.utc)
+    except ValueError:
+        return None
+
+    return time_utc.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 class CustomNormalizer(ABC):
 
@@ -117,6 +134,7 @@ class CustomNormalizer(ABC):
                   file=sys.stderr)
             os.remove(arc_file_abspath)
             return False
+
         return True
 
     def _reset_buffers(self):
