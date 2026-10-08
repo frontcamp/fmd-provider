@@ -15,6 +15,8 @@ import zipfile
 from abc import ABC, abstractmethod
 from contextlib import ExitStack
 
+DEBUG = True  # force fresh normalization & prevent deleting sources
+
 # Set UTF-8 encoding for stdout
 if isinstance(sys.stdout, io.TextIOWrapper):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -34,13 +36,13 @@ _APP_INTRO = f'''{_APP_NAME} {_APP_VERSION}
 
 
 def ensure_dir(dir_abspath):
-    '''Ensure that the path's directories are exists, create them otherwise.'''
+    '''Ensure the directory exists, creating it if necessary.'''
 
     if not os.path.exists(dir_abspath):
         os.makedirs(dir_abspath)
 
-def str_to_float(value: str) -> float | None:
-    '''Convert string to valid float'''
+def parse_price(value: str) -> float | None:
+    '''Parse a positive finite price; return None if invalid.'''
     try:
         result = float(value.replace(',', '.'))
     except ValueError:
@@ -162,7 +164,6 @@ class CustomNormalizer(ABC):
 
     def _buff_trans_sort_by_time(self):
         '''Sort transactions by datetime'''
-
         self._buff_trans.sort(
             key=lambda transaction: (
                 transaction['trade_time'][:19],
@@ -171,8 +172,7 @@ class CustomNormalizer(ABC):
         )
 
     def _buff_trans_filter_by_date(self, date):
-        '''Remove transactions out of processing date'''
-
+        '''Keep only transactions from the processing date'''
         self._buff_trans = [
             transaction for transaction in self._buff_trans
             if transaction['trade_time'][:10].replace('-', '') == date
@@ -255,12 +255,14 @@ class CustomNormalizer(ABC):
         print('-' * 20)
         print(f'File: {src_file_name}; date: {proc_date}')
 
-        # if archive already exists..
+        # reuse an existing valid archive when no log file remains
         if os.path.isfile(arc_file_abspath):
             print(f'Already exists: {arc_file_abspath}')
-            if self._verify_zip(arc_file_abspath) and not os.path.isfile(log_file_abspath):
-                #os.remove(src_file_abspath)  # DELETING SOURCE!
-                #print(f'Deleted: {src_file_name}')
+            if self._verify_zip(arc_file_abspath) \
+            and not os.path.isfile(log_file_abspath) \
+            and not DEBUG:
+                os.remove(src_file_abspath)  # DELETES THE SOURCE FILE!
+                print(f'Deleted: {src_file_name}')
                 return
 
         self._parse_source(src_file_name, src_file_abspath)
@@ -275,7 +277,7 @@ class CustomNormalizer(ABC):
 
         self._save_archive(arc_file_abspath, transactions, instruments)
 
-        # check if archive exists and valid, delete otherwise
+        # verify the new archive; remove it if invalid.
         self._verify_zip(arc_file_abspath)
 
         # show results
@@ -285,10 +287,11 @@ class CustomNormalizer(ABC):
         print(report)
 
         # if archive successfully created and log is empty..
-        if os.path.isfile(arc_file_abspath) and not self._buff_log:
-            #os.remove(src_file_abspath)  # DELETING SOURCE!
-            #print(f'Deleted: {src_file_name}')
-            pass
+        if os.path.isfile(arc_file_abspath) \
+        and not self._buff_log \
+        and not DEBUG:
+            os.remove(src_file_abspath)  # DELETES THE SOURCE FILE!
+            print(f'Deleted: {src_file_name}')
 
     def process(self) -> None:
         src_file_names = os.listdir(self._src_dir_abspath)
