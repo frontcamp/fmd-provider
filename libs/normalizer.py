@@ -6,6 +6,7 @@
 #   src_* - source
 
 import csv
+import gc
 import gzip
 import io
 import math
@@ -140,6 +141,7 @@ class CustomNormalizer(ABC):
     def _reset_buffers(self):
         self._buff_trans = []
         self._buff_log = []
+        gc.collect()
 
     def _parse_source(self, src_file_name, src_file_abspath):
         with ExitStack() as stack:
