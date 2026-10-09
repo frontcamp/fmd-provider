@@ -13,6 +13,7 @@ import math
 import os
 import sys
 import zipfile
+import zlib
 from abc import ABC, abstractmethod
 from contextlib import ExitStack
 from datetime import datetime, timezone
@@ -130,7 +131,7 @@ class CustomNormalizer(ABC):
                 if bad_file_name is not None:
                     raise zipfile.BadZipFile(f'Error: Corrupted file: {bad_file_name}')
 
-        except Exception as exc:
+        except (zipfile.BadZipFile, OSError, EOFError, zlib.error) as exc:
             print(f'Error: The archive failed verification: {arc_file_abspath}: {exc}',
                   file=sys.stderr)
             os.remove(arc_file_abspath)
