@@ -206,10 +206,11 @@ class CustomNormalizer(ABC):
         writer = csv.DictWriter(
             temp_trans_file_obj,
             fieldnames=(
-                'source', 'mic', 'isin', 'title', 'trade_time',
+                'source', 'mic', 'isin', 'trade_time',
                 'price', 'currency', 'quantity', 'quantity_unit',
             ),
             delimiter=';',
+            extrasaction='ignore',
         )
         writer.writeheader()
         writer.writerows(self._buff_trans)
@@ -225,7 +226,6 @@ class CustomNormalizer(ABC):
                 seen_isins.add(isin)
                 instruments.append({
                     'isin': isin,
-                    'title': transaction['title'],
                 })
 
         instruments.sort(key=lambda record: record['isin'])
@@ -236,7 +236,7 @@ class CustomNormalizer(ABC):
         writer = csv.DictWriter(
             temp_instr_file_obj,
             fieldnames=(
-                'isin', 'title',
+                'isin',
             ),
             delimiter=';',
         )

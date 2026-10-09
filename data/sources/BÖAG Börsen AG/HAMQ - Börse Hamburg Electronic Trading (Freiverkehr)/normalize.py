@@ -75,12 +75,10 @@ class Normalizer(CustomNormalizer):
             return False
 
         # convert to unified record
-        title = source_record['displayName'] or source_record['ISIN']
         transaction = {
             'source': 'HAMQ',                   # data source ID
             'mic': source_record['MIC'],        # trade execution venue
             'isin': source_record['ISIN'],      # instrument ID
-            'title': title,                     # instrument name
             'trade_time': time_utc,             # trade execution time (UTC)
             'price': price,                     # price
             'currency': '',                     # currency
