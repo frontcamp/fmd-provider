@@ -39,11 +39,15 @@ Deutsche Börse Group:
 
 HAMN - Börse Hamburg LS-X (Freiverkehr) (trading platform of Börse Hamburg):
     Trading hours: 07:30 - 23:00
-    Download: https://www.ls-x.de/de/download (внизу 2 ссылки: Vorheriger Handelstag (DD.MM.YYYY), RTS 1 & 2)
+    Download: https://www.ls-x.de/de/download
+        внизу 2 ссылки за сегодня: Heute (RTS 1 & 2)
+        внизу 2 ссылки за вчера: Vorheriger Handelstag (DD.MM.YYYY), RTS 1 & 2)
 
 XEQT - Equiduct (trading platform of Börse Berlin AG):
     Trading hours: 09:00 - 17:40
-    Download: https://www.equiduct.com/document-library/ (Delayed Trade Data > Previous Day Trade Data)
+    Download: https://www.equiduct.com/document-library/
+        за вчера: Delayed Trade Data > Previous Day Trade Data
+        за сегодня: Delayed Trade Data > 15-Minute Delayed Trade Data
 
 360T EU MTF (Frankfurt): (не качаем - не интересно)
 
