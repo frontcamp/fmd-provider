@@ -71,6 +71,28 @@ def parse_time_DUSX(value: str) -> str | None:
 
     return time_utc.strftime('%Y-%m-%dT%H:%M:%SZ')
 
+def parse_time_HAMX(value: str) -> str | None:
+    '''Convert HAMN UTC time with milliseconds to RFC 3339 UTC.'''
+    try:
+        time_utc = datetime.strptime(
+            value, '%Y-%m-%d %H:%M:%S.%f'
+        ).replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+    return time_utc.isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+
+def parse_time_XEQT(value: str) -> str | None:
+    '''Convert Equiduct UTC time with microseconds to RFC 3339 UTC.'''
+    try:
+        time_utc = datetime.strptime(
+            value, '%Y%m%d-%H:%M:%S.%f'
+        ).replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+    return time_utc.isoformat(timespec='microseconds').replace('+00:00', 'Z')
+
 class CustomNormalizer(ABC):
 
     def __init__(self):
