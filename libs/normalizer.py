@@ -22,7 +22,7 @@ from zoneinfo import ZoneInfo, reset_tzpath
 _MODULE_DIR_ABSPATH = os.path.dirname(os.path.abspath(__file__))
 reset_tzpath([os.path.join(_MODULE_DIR_ABSPATH, 'tzdata', 'zoneinfo')])
 
-DEBUG = True  # force fresh normalization & prevent deleting sources
+DEBUG = False  # force fresh normalization & prevent deleting sources
 
 # Set UTF-8 encoding for stdout
 if isinstance(sys.stdout, io.TextIOWrapper):

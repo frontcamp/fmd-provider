@@ -1,5 +1,5 @@
 # project
-/data/normalized/
+#/data/normalized/
 /data/sources/**
 !/data/sources/**/
 !/data/sources/**/*.cmd
