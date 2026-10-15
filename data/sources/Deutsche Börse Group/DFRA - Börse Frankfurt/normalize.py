@@ -81,7 +81,15 @@ class Normalizer(CustomNormalizer):
         is_price_event = (
             source_record.get('messageId') == 'posttrade'
             and source_record.get('mmtModificationInd') == '-'  # new transaction
-            and source_record.get('venueOfExecution') is not None
+        )
+
+        is_amendment = (
+            source_record.get('messageId') == 'posttrade'
+            and source_record.get('mmtModificationInd') == 'A'
+        )
+
+        has_valid_fields = (
+            source_record.get('venueOfExecution') is not None
             and source_record.get('instrumentIdentificationCode') is not None
             and source_record.get('tradingDateAndTime') is not None
             and source_record.get('price') is not None  # zero allowed
@@ -90,7 +98,7 @@ class Normalizer(CustomNormalizer):
             and source_record.get('transactionIdentificationCode') is not None
         )
 
-        if is_price_event:
+        if (is_price_event or is_amendment) and has_valid_fields:
 
             # convert to unified record
             transaction = {
@@ -105,16 +113,14 @@ class Normalizer(CustomNormalizer):
                 '__tid': source_record['transactionIdentificationCode'], # transaction ID
             }
 
+            if is_amendment:
+                self._buff_trans = [
+                    record for record in self._buff_trans
+                    if record['__tid'] != transaction['__tid']
+                ]
+
             self._buff_trans.append(transaction)
             return True
-
-        is_amendment = (
-            source_record.get('messageId') == 'posttrade'
-            and source_record.get('mmtModificationInd') == 'A'
-        )
-
-        if is_amendment:  # update existing transaction
-            return False  # save to log..
 
         is_cancellation = (
             source_record.get('messageId') == 'posttrade'
