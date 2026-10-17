@@ -16,6 +16,7 @@ https://registers.esma.europa.eu/solr/esma_registers_firds_files/select?q=file_t
 4) Press [SEARCH]
 
 All the links shown will point to parts of a single, unified register of financial instruments.
+Download all zip files to the `latest-snapshot` folder.
 
 
 Data Fields

@@ -1,3 +1,4 @@
-/_esma-data/**
-!/_esma-data/**/
-!/_esma-data/**/*.txt
+/_sources/esma/**
+!/_sources/esma/**/
+!/_sources/esma/**/*.txt
+/_sources/collected-instrument-isins.csv

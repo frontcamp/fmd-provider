@@ -10,7 +10,7 @@ else:
 
 
 _SOURCE_DIR_ABSPATH = (
-    Path(__file__).resolve().parent / "_esma-data" / "last-snapshot"
+    Path(__file__).resolve().parent / "_sources" / "esma" / "latest-snapshot"
 )
 _XML_NS = "{urn:iso:std:iso:20022:tech:xsd:auth.017.001.02}"
 _REF_DATA_TAG = _XML_NS + "RefData"
