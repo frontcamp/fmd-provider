@@ -1,6 +1,6 @@
 import atexit
 import sqlite3
-
+from typing import ClassVar
 
 _APP_NAME = 'isinreg'
 _APP_VERSION = '0.1.0'
@@ -25,7 +25,7 @@ def _normalize_short(short: str) -> str:
 class ISINRegistry:
     REG_FILE_ABSPATH = __file__.removesuffix(".py") + ".sqlite3"
     _connection: sqlite3.Connection = sqlite3.connect(REG_FILE_ABSPATH)
-    _updcache: list[tuple[str, str, str]] = []
+    _updcache: ClassVar[list[tuple[str, str, str]]] = []
 
     @classmethod
     def _ensure_reg_exists(cls) -> None:
