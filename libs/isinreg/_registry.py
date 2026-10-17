@@ -71,20 +71,28 @@ class ISINRegistry:
             )
 
     @classmethod
-    def get_isin_title(cls, isin: str) -> str | None:
+    def get_isin_title(cls, isin: str, fallback_to_isin: bool = False) -> str | None:
+        normalized_isin = _normalize_isin(isin)
         row = cls._connection.execute(
             "SELECT title FROM isin_registry WHERE isin = ?",
-            (_normalize_isin(isin),),
+            (normalized_isin,),
         ).fetchone()
-        return row[0] if row is not None else None
+        result = row[0] if row is not None else None
+        if fallback_to_isin and (result is None or result == ""):
+            return normalized_isin
+        return result
 
     @classmethod
-    def get_isin_short(cls, isin: str) -> str | None:
+    def get_isin_short(cls, isin: str, fallback_to_isin: bool = False) -> str | None:
+        normalized_isin = _normalize_isin(isin)
         row = cls._connection.execute(
             "SELECT short FROM isin_registry WHERE isin = ?",
-            (_normalize_isin(isin),),
+            (normalized_isin,),
         ).fetchone()
-        return row[0] if row is not None else None
+        result = row[0] if row is not None else None
+        if fallback_to_isin and (result is None or result == ""):
+            return normalized_isin
+        return result
 
     @classmethod
     def del_isin(cls, isin: str) -> int:

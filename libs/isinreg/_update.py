@@ -11,14 +11,17 @@ else:
     from _registry import ISINRegistry
 
 
-_ESMA_DATA_DIR_ABSPATH = (
+_ESMA_DATA_DIR_ABSPATH = (  # ESMA data files
     Path(__file__).resolve().parent / "_sources" / "esma" / "latest-snapshot"
 )
-_REQUIRED_ISINS_FILE_ABSPATH = (
+_REQUIRED_ISINS_FILE_ABSPATH = (  # instruments required by this project
     Path(__file__).resolve().parent / "_sources" / "collected-instrument-isins.csv"
 )
-_ESMA_MISSING_ISINS_FILE_ABSPATH = (
-    Path(__file__).resolve().parent / "_sources" / "absent-isins.csv"
+_ESMA_LIMITED_ISINS_FILE_ABSPATH = (  # instruments limited by time
+    Path(__file__).resolve().parent / "_reports" / "limited-isins.csv"
+)
+_ESMA_MISSING_ISINS_FILE_ABSPATH = (  # instruments required but missing in ESMA
+    Path(__file__).resolve().parent / "_reports" / "absent-isins.csv"
 )
 _XML_NS = "{urn:iso:std:iso:20022:tech:xsd:auth.017.001.02}"
 _TAG_REF_DATA = _XML_NS + "RefData"
@@ -26,9 +29,14 @@ _TAG_ATTRIBUTES = _XML_NS + "FinInstrmGnlAttrbts"
 _TAG_ID = _XML_NS + "Id"
 _TAG_TITLE = _XML_NS + "FullNm"
 _TAG_SHORT = _XML_NS + "ShrtNm"
+_TAG_DEBT_ATTRIBUTES = _XML_NS + "DebtInstrmAttrbts"
+_TAG_DERIVATIVE_ATTRIBUTES = _XML_NS + "DerivInstrmAttrbts"
+_TAG_MATURITY = _XML_NS + "MtrtyDt"
+_TAG_EXPIRY = _XML_NS + "XpryDt"
+_NO_END_DATE = "9999-12-31"
 
 
-def _read_records(xml_file_obj: IO[bytes]) -> Iterator[tuple[str, str, str]]:
+def _read_records(xml_file_obj: IO[bytes]) -> Iterator[tuple[str, str, str, bool]]:
     # Keep parent references so processed records can be removed from the XML tree.
     parents: list[ElementTree.Element] = []
     for event, element in ElementTree.iterparse(
@@ -47,10 +55,21 @@ def _read_records(xml_file_obj: IO[bytes]) -> Iterator[tuple[str, str, str]]:
         if attributes is not None:
             isin = (attributes.findtext(_TAG_ID) or "").strip()
             if isin:
+                debt_attributes = element.find(_TAG_DEBT_ATTRIBUTES)
+                derivative_attributes = element.find(_TAG_DERIVATIVE_ATTRIBUTES)
+                maturity = (
+                    (debt_attributes.findtext(_TAG_MATURITY) or "").strip()
+                    if debt_attributes is not None else ""
+                )
+                expiry = (
+                    (derivative_attributes.findtext(_TAG_EXPIRY) or "").strip()
+                    if derivative_attributes is not None else ""
+                )
                 record = (
                     isin,
                     attributes.findtext(_TAG_TITLE) or "",
                     attributes.findtext(_TAG_SHORT) or "",
+                    any(date and date != _NO_END_DATE for date in (maturity, expiry)),
                 )
 
         parents[-1].remove(element)
@@ -75,7 +94,10 @@ def collect() -> None:
     total = 0
     matched = 0
     skipped = 0
-    missing = isin_codes.copy()
+    limited = 0
+    limited_isins: set[str] = set()
+    missing_isins = isin_codes.copy()
+
     for zip_file_abspath in zip_files:
         with ZipFile(zip_file_abspath) as zip_file_obj:
             for xml_file_name in zip_file_obj.namelist():
@@ -84,7 +106,7 @@ def collect() -> None:
 
                 # Read each XML directly from its archive, one record at a time.
                 with zip_file_obj.open(xml_file_name) as xml_file_obj:
-                    for isin, title, short in _read_records(xml_file_obj):
+                    for isin, title, short, has_end_date in _read_records(xml_file_obj):
 
                         total += 1
 
@@ -98,8 +120,20 @@ def collect() -> None:
                                 print("-", end="", flush=True)
                             continue
 
+                        if has_end_date:
+                            limited += 1
+                            limited_isins.add(isin)
+                            missing_isins.discard(isin)
+                            if limited % 1000000 == 0:
+                                print("_", end="", flush=True)
+                            elif limited % 100000 == 0:
+                                print(",", end="", flush=True)
+                            elif limited % 20000 == 0:
+                                print(".", end="", flush=True)
+                            continue
+
                         ISINRegistry.upsert_isin_info_batch(isin, title, short)
-                        missing.discard(isin)
+                        missing_isins.discard(isin)
 
                         matched += 1
                         if matched % 1000000 == 0:
@@ -111,14 +145,28 @@ def collect() -> None:
 
     ISINRegistry.upsert_isin_info_batch("", "", "")  # flush batch cache
 
+    if limited_isins or missing_isins:
+        _ESMA_LIMITED_ISINS_FILE_ABSPATH.parent.mkdir(exist_ok=True)
+
+    # save limited ISINs
+    if limited_isins:
+        with _ESMA_LIMITED_ISINS_FILE_ABSPATH.open(
+            "w", encoding="utf-8", newline=""
+        ) as limited_file_obj:
+            writer = csv.writer(limited_file_obj)
+            writer.writerow(["isin"])
+            writer.writerows((isin,) for isin in limited_isins)
+    else:
+        _ESMA_LIMITED_ISINS_FILE_ABSPATH.unlink(missing_ok=True)
+
     # save missing ISINs
-    if missing:
+    if missing_isins:
         with _ESMA_MISSING_ISINS_FILE_ABSPATH.open(
             "w", encoding="utf-8", newline=""
         ) as missing_file_obj:
             writer = csv.writer(missing_file_obj)
             writer.writerow(["isin"])
-            writer.writerows((isin,) for isin in missing)
+            writer.writerows((isin,) for isin in missing_isins)
     else:
         _ESMA_MISSING_ISINS_FILE_ABSPATH.unlink(missing_ok=True)
 
@@ -126,7 +174,8 @@ def collect() -> None:
     print(f"\nProcessed: {total}; "
           f"matched: {matched}; "
           f"skipped: {skipped}; "
-          f"missing: {len(missing)}")
+          f"limited: {limited}; "
+          f"missing: {len(missing_isins)}")
 
 
 if __name__ == "__main__":
