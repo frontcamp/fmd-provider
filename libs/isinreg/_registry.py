@@ -116,6 +116,7 @@ class ISINRegistry:
                 "DELETE FROM isin_registry WHERE isin = ?",
                 ((_normalize_isin(isin),) for isin in isins),
             )
+        cls._connection.execute("VACUUM")
 
     @classmethod
     def upsert_isin_info_batch(cls, isin: str, title: str, short: str) -> bool:
