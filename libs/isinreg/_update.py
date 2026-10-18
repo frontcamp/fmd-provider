@@ -23,6 +23,9 @@ _ESMA_LIMITED_ISINS_FILE_ABSPATH = (  # instruments limited by time
 _ESMA_MISSING_ISINS_FILE_ABSPATH = (  # instruments required but missing in ESMA
     Path(__file__).resolve().parent / "_reports" / "absent-isins.csv"
 )
+_DELETED_ISINS_FILE_ABSPATH = (  # instruments no longer required by this project
+    Path(__file__).resolve().parent / "_reports" / "deleted-isins.csv"
+)
 _XML_NS = "{urn:iso:std:iso:20022:tech:xsd:auth.017.001.02}"
 _TAG_REF_DATA = _XML_NS + "RefData"
 _TAG_ATTRIBUTES = _XML_NS + "FinInstrmGnlAttrbts"
@@ -85,7 +88,7 @@ def collect() -> None:
         reader = csv.reader(isins_file_obj)
         if next(reader, None) != ["isin"]:
             raise ValueError(f"Unexpected CSV header in {_REQUIRED_ISINS_FILE_ABSPATH}")
-        isin_codes = {row[0].strip() for row in reader if row and row[0].strip()}
+        required_isins = {row[0].strip() for row in reader if row and row[0].strip()}
 
     zip_files = sorted(_ESMA_DATA_DIR_ABSPATH.glob("*.zip"))
     if not zip_files:
@@ -96,7 +99,7 @@ def collect() -> None:
     skipped = 0
     limited = 0
     limited_isins: set[str] = set()
-    missing_isins = isin_codes.copy()
+    missing_isins = required_isins.copy()
 
     for zip_file_abspath in zip_files:
         with ZipFile(zip_file_abspath) as zip_file_obj:
@@ -110,7 +113,7 @@ def collect() -> None:
 
                         total += 1
 
-                        if isin not in isin_codes:  # skip unknown ISINs
+                        if isin not in required_isins:  # skip unknown ISINs
                             skipped += 1
                             if skipped % 1000000 == 0:
                                 print("X", end="", flush=True)
@@ -170,12 +173,29 @@ def collect() -> None:
     else:
         _ESMA_MISSING_ISINS_FILE_ABSPATH.unlink(missing_ok=True)
 
+    # delete outdated ISINs
+    deleted_isins = [
+        isin for isin in ISINRegistry.get_isins() if isin not in required_isins
+    ]
+    if deleted_isins:
+        _DELETED_ISINS_FILE_ABSPATH.parent.mkdir(exist_ok=True)
+        with _DELETED_ISINS_FILE_ABSPATH.open(
+            "w", encoding="utf-8", newline=""
+        ) as deleted_file_obj:
+            writer = csv.writer(deleted_file_obj)
+            writer.writerow(["isin"])
+            writer.writerows((isin,) for isin in deleted_isins)
+        ISINRegistry.del_isins(deleted_isins)
+    else:
+        _DELETED_ISINS_FILE_ABSPATH.unlink(missing_ok=True)
+
     # summary
     print(f"\nProcessed: {total}; "
           f"matched: {matched}; "
           f"skipped: {skipped}; "
           f"limited: {limited}; "
-          f"missing: {len(missing_isins)}")
+          f"missing: {len(missing_isins)}; "
+          f"deleted: {len(deleted_isins)}")
 
 
 if __name__ == "__main__":

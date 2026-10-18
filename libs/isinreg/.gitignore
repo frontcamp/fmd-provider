@@ -1,3 +1,4 @@
+/_reports
 /_sources/esma/**
 !/_sources/esma/**/
 !/_sources/esma/**/*.txt

@@ -95,6 +95,12 @@ class ISINRegistry:
         return result
 
     @classmethod
+    def get_isins(cls) -> list[str]:
+        return [row[0] for row in cls._connection.execute(
+            "SELECT isin FROM isin_registry"
+        )]
+
+    @classmethod
     def del_isin(cls, isin: str) -> int:
         with cls._connection:
             cursor = cls._connection.execute(
@@ -102,6 +108,14 @@ class ISINRegistry:
                 (_normalize_isin(isin),),
             )
         return cursor.rowcount
+
+    @classmethod
+    def del_isins(cls, isins: list[str]) -> None:
+        with cls._connection:
+            cls._connection.executemany(
+                "DELETE FROM isin_registry WHERE isin = ?",
+                ((_normalize_isin(isin),) for isin in isins),
+            )
 
     @classmethod
     def upsert_isin_info_batch(cls, isin: str, title: str, short: str) -> bool:
