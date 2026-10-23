@@ -28,6 +28,9 @@ class Normalizer(CustomNormalizer):
         if not src_file_name.endswith('.csv'):
             return False
 
+        if src_file_name[18:24] != '_HAMP_':
+            return False
+
         src_file_name = src_file_name.removesuffix('.csv')
         date_part = src_file_name.rsplit('_', 1)[-1]
         yyyymmdd = date_part[:8]
