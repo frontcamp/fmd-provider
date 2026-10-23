@@ -28,6 +28,9 @@ class Normalizer(CustomNormalizer):
         if not src_file_name.endswith('.json.gz'):
             return False
 
+        if src_file_name[:5] != 'DGAT-':
+            return False
+
         src_file_name = src_file_name.removesuffix('.json.gz')
         date_part = src_file_name[-10:]
         yyyymmdd = date_part.replace('-', '')
