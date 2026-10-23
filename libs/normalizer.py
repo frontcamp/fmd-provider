@@ -228,7 +228,7 @@ class CustomNormalizer(ABC):
         writer = csv.DictWriter(
             temp_trans_file_obj,
             fieldnames=(
-                'source', 'mic', 'isin', 'trade_time',
+                'dataset', 'mic', 'isin', 'trade_time',
                 'price', 'currency', 'quantity', 'quantity_unit',
             ),
             delimiter=';',
