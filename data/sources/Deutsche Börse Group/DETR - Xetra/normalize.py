@@ -99,15 +99,15 @@ class Normalizer(CustomNormalizer):
 
             # convert to unified record
             transaction = {
-                'dataset': 'DETR', # dataset ID
-                'mic': source_record['venueOfExecution'], # trade execution venue
-                'isin': source_record['instrumentIdentificationCode'], # instrument ID
-                'trade_time': source_record['tradingDateAndTime'], # trade execution time (UTC)
+                'dataset': 'DETR',  # dataset ID
+                'mic': source_record['venueOfExecution'],  # trade execution venue
+                'isin': source_record['instrumentIdentificationCode'],  # instrument ID
+                'trade_time': source_record['tradingDateAndTime'],  # trade execution time (UTC)
                 'price': source_record['price'],
                 'currency': source_record['priceCurrency'],
                 'quantity': source_record['quantity'],
                 'quantity_unit': '',
-                '__tid': source_record['transactionIdentificationCode'], # transaction ID
+                '__tid': source_record['transactionIdentificationCode'],  # transaction ID
             }
 
             self._buff_trans.append(transaction)

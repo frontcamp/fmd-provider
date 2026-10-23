@@ -76,7 +76,7 @@ class Normalizer(CustomNormalizer):
 
         # convert to unified record
         transaction = {
-            'dataset': 'DUSB',                   # dataset ID
+            'dataset': 'DUSB',                  # dataset ID
             'mic': source_record['MIC'],        # trade execution venue
             'isin': source_record['ISIN'],      # instrument ID
             'trade_time': time_utc,             # trade execution time (UTC)
