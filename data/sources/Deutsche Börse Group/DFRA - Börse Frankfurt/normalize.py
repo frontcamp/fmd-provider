@@ -102,7 +102,7 @@ class Normalizer(CustomNormalizer):
 
             # convert to unified record
             transaction = {
-                'source': 'DFRA', # data source ID
+                'dataset': 'DFRA', # dataset ID
                 'mic': source_record['venueOfExecution'], # trade execution venue
                 'isin': source_record['instrumentIdentificationCode'], # instrument ID
                 'trade_time': source_record['tradingDateAndTime'], # trade execution time (UTC)

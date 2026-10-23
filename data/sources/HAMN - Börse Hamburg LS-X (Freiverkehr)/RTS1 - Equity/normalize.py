@@ -98,7 +98,7 @@ class Normalizer(CustomNormalizer):
             return False
 
         transaction = {
-            'source': 'HAMN',
+            'dataset': 'RTS1',
             'mic': source_record['Venue of execution'],
             'isin': source_record['ISIN'],
             'trade_time': time_utc,

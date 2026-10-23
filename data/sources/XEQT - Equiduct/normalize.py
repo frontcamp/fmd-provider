@@ -89,7 +89,7 @@ class Normalizer(CustomNormalizer):
             return False
 
         transaction = {
-            'source': 'XEQT',
+            'dataset': 'XEQT',
             'mic': 'XEQT',
             'isin': source_record['isin'],
             'trade_time': time_utc,
