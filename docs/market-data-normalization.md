@@ -2,8 +2,8 @@
 Нормализация исходных рыночных данных
 =====================================
 
-Revision: 2026-10-26T07:49:00Z
-Copyright 2026, Maksym Plaksin. All rights reserved.
+* Revision: 2026-10-26T07:49:00Z\
+* Copyright 2026, Maksym Plaksin. All rights reserved.
 
 
 Назначение документа
