@@ -63,11 +63,9 @@ Development workflow
 Documenting rules
 -----------------
 
-When reviewing the documentation, keep in mind that scripts and batch/command files may be intentionally empty, and planned files may not yet exist. A developer may create directories first, add files later, and implement them in a subsequent stage. Do not report these as errors; briefly note which files still need to be created or implemented.
+For reviewing, editing, or creating project documentation, use the skill: `skills/documentation-standards/SKILL.md`.
 
-Rules:
-- never fix е/ё
-- instead of dash always use minus
+When reviewing the source code, keep in mind that scripts and batch/command files may be intentionally empty, and planned files may not yet exist. A developer may create directories first, add files later, and implement them in a subsequent stage. Do not report these as errors; briefly note which files still need to be created or implemented.
 
 
 Development rules
