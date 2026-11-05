@@ -2,10 +2,6 @@
 Financial Market Data Provider (FMD Provider)
 =============================================
 
-Revision: 2026-10-26T03:15:00Z
-Copyright 2026, Maksym Plaksin. All rights reserved.
-
-
 Документ содержит вводную информацию:
 
 - назначение проекта
@@ -36,4 +32,8 @@ FMD Provider предназначен для сбора рыночных дан�
 
 
 
+
+---
+
+Copyright 2026, Maksym Plaksin. All rights reserved.
 
