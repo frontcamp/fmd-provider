@@ -13,13 +13,6 @@ Financial Market Data Provider (FMD Provider)
 Технические спецификации: `docs/SPECIFICATION.md`
 
 
-Общие сведения
---------------
-
-- Основной язык программирования: Python.
-- Целевая ОС: Windows 11
-
-
 Назначение проекта
 ------------------
 
