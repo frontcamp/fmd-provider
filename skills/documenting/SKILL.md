@@ -6,7 +6,7 @@ description: Применять при проверке и редактиров�
 Инструкции по документированию
 ==============================
 
-* Revision: 2026-11-06T09:50:00Z
+* Revision: 2026-11-06T13:45:00Z
 * Copyright 2026, Maksym Plaksin. All rights reserved.
 
 

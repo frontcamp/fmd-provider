@@ -38,7 +38,6 @@ Agent instructions
 - техзадание: `docs/SPECIFICATION.md`
 - архитектура: `docs/ARCHITECTURE.md`
 - реализация: `docs/IMPLEMENTATION.md` (необязательный)
-- навыки ИИ-агента: `skills/*`
 
 
 Правила Git
