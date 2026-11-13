@@ -8,6 +8,7 @@
 !/data/sources/**/*.txt
 
 # common
+*.code-workspace
 tree.txt
 
 # python
